@@ -8,7 +8,6 @@ app = Flask(__name__)
 def try_create_instance():
     print("OCI retry thread started...", flush=True)
     
-    # Check all required env vars first
     required = [
         "OCI_USER_ID", "OCI_TENANCY_ID", "OCI_REGION",
         "OCI_KEY_FINGERPRINT", "OCI_PRIVATE_KEY_CONTENT",
@@ -33,7 +32,8 @@ def try_create_instance():
                 "tenancy": os.environ.get("OCI_TENANCY_ID"),
                 "region": os.environ.get("OCI_REGION"),
                 "fingerprint": os.environ.get("OCI_KEY_FINGERPRINT"),
-                "key_content": os.environ.get("OCI_PRIVATE_KEY_CONTENT")
+                "key_content": os.environ.get("OCI_PRIVATE_KEY_CONTENT"),
+                "timeout": 30
             }
             print("Config built, connecting to OCI...", flush=True)
             compute = oci.core.ComputeClient(config)
