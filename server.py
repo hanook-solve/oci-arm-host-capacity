@@ -25,6 +25,7 @@ def try_create_instance():
     print("Starting OCI retry loop...", flush=True)
     
     while True:
+        print("Making OCI attempt now...", flush=True)
         try:
             import oci
             config = {
