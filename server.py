@@ -1,16 +1,32 @@
 from flask import Flask
 import threading
-import oci
 import os
 import time
 
 app = Flask(__name__)
 
 def try_create_instance():
-    print("OCI retry thread started...")
+    print("OCI retry thread started...", flush=True)
+    
+    # Check all required env vars first
+    required = [
+        "OCI_USER_ID", "OCI_TENANCY_ID", "OCI_REGION",
+        "OCI_KEY_FINGERPRINT", "OCI_PRIVATE_KEY_CONTENT",
+        "OCI_SUBNET_ID", "OCI_IMAGE_ID", "OCI_SSH_PUBLIC_KEY"
+    ]
+    
+    for var in required:
+        value = os.environ.get(var)
+        if not value:
+            print(f"MISSING ENV VAR: {var}", flush=True)
+        else:
+            print(f"OK: {var} is set", flush=True)
+    
+    print("Starting OCI retry loop...", flush=True)
+    
     while True:
-        print("Attempting to create instance...")
         try:
+            import oci
             config = {
                 "user": os.environ.get("OCI_USER_ID"),
                 "tenancy": os.environ.get("OCI_TENANCY_ID"),
@@ -18,6 +34,7 @@ def try_create_instance():
                 "fingerprint": os.environ.get("OCI_KEY_FINGERPRINT"),
                 "key_content": os.environ.get("OCI_PRIVATE_KEY_CONTENT")
             }
+            print("Config built, connecting to OCI...", flush=True)
             compute = oci.core.ComputeClient(config)
             
             details = oci.core.models.LaunchInstanceDetails(
@@ -36,14 +53,12 @@ def try_create_instance():
             )
             
             response = compute.launch_instance(details)
-            print(f"SUCCESS! Instance created: {response.data.id}")
+            print(f"SUCCESS! Instance created: {response.data.id}", flush=True)
             break
             
-        except oci.exceptions.ServiceError as e:
-            print(f"Attempt failed: {e.message} - Retrying in 5 minutes...")
-            time.sleep(300)
         except Exception as e:
-            print(f"Error: {str(e)} - Retrying in 5 minutes...")
+            print(f"Attempt failed: {str(e)}", flush=True)
+            print("Retrying in 5 minutes...", flush=True)
             time.sleep(300)
 
 thread = threading.Thread(target=try_create_instance)
