@@ -1,0 +1,4 @@
+flask
+oci
+requests
+python-dotenv
