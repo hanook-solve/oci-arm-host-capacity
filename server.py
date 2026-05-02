@@ -2,8 +2,12 @@ from flask import Flask
 import threading
 import os
 import time
+import signal
 
 app = Flask(__name__)
+
+def timeout_handler(signum, frame):
+    raise Exception("OCI request timed out after 30 seconds")
 
 def try_create_instance():
     print("OCI retry thread started...", flush=True)
@@ -27,6 +31,9 @@ def try_create_instance():
         print("Making OCI attempt now...", flush=True)
         try:
             import oci
+            signal.signal(signal.SIGALRM, timeout_handler)
+            signal.alarm(30)
+            
             config = {
                 "user": os.environ.get("OCI_USER_ID"),
                 "tenancy": os.environ.get("OCI_TENANCY_ID"),
@@ -37,6 +44,7 @@ def try_create_instance():
             }
             print("Config built, connecting to OCI...", flush=True)
             compute = oci.core.ComputeClient(config)
+            print("Client created, launching instance...", flush=True)
             
             details = oci.core.models.LaunchInstanceDetails(
                 compartment_id=os.environ.get("OCI_TENANCY_ID"),
@@ -54,10 +62,12 @@ def try_create_instance():
             )
             
             response = compute.launch_instance(details)
+            signal.alarm(0)
             print(f"SUCCESS! Instance created: {response.data.id}", flush=True)
             break
             
         except Exception as e:
+            signal.alarm(0)
             print(f"Attempt failed: {str(e)}", flush=True)
             print("Retrying in 5 minutes...", flush=True)
             time.sleep(300)
