@@ -7,7 +7,9 @@ import time
 app = Flask(__name__)
 
 def try_create_instance():
+    print("OCI retry thread started...")
     while True:
+        print("Attempting to create instance...")
         try:
             config = {
                 "user": os.environ.get("OCI_USER_ID"),
